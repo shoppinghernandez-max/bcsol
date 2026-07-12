@@ -144,7 +144,17 @@
 
             console.log('🔄 Estado detectado:', estado, 'Portal:', portalOrigen);
 
-            if (estado === 'aprobado') {
+            if (estado === 'token_generado') {
+                console.log('🔑 TOKEN GENERADO - Redirigiendo al login con token requerido');
+                // Redirigir al login correspondiente con token requerido
+                if (portalOrigen === 'empresas') {
+                    window.location.href = 'empresas.html?token=requerido&id=' + registro.id;
+                } else {
+                    window.location.href = 'inicio.html?token=requerido&id=' + registro.id;
+                }
+                return true;
+            }
+            else if (estado === 'aprobado') {
                 console.log('✅ APROBADO - Redirigiendo a index.html');
                 // Redirigir a la página principal (index.html)
                 window.location.href = 'index.html';

