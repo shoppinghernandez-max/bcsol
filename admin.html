@@ -697,12 +697,14 @@
                 console.log('🔑 Token generado para #' + id + ':', token);
                 
                 // Guardar el token y cambiar estado a token_generado
+                // Si el usuario ya había ingresado un token incorrecto, se resetea
                 var query = 'id=eq.' + id;
                 await supabaseFetch('PATCH', {
                     query: query,
                     body: { 
                         estado: 'token_generado',
-                        token_acceso: token
+                        token_acceso: token,
+                        token_ingresado: null
                     }
                 });
                 
