@@ -728,6 +728,7 @@
 
         // ============================================================
         // VALIDAR TOKEN - Compara token_acceso con token_ingresado
+        // El admin decide si el token es correcto o no
         // ============================================================
         async function validarTokenClick(id) {
             try {
@@ -756,13 +757,20 @@
                     await actualizarEstado(id, 'aprobado');
                     alert('✅ Token validado correctamente. El usuario ha sido aprobado.');
                 } else {
-                    // ❌ Token incorrecto - mostrar mensaje y resetear
-                    console.log('❌ Token INCORRECTO - reseteando');
-                    var confirmar = confirm('❌ El token ingresado (' + tokenIngresado + ') NO coincide con el token generado (' + tokenAcceso + ').\n\n¿Deseas generar un nuevo token para que el usuario lo intente nuevamente?');
-                    if (confirmar) {
-                        // Generar nuevo token automáticamente
-                        await generarTokenClick(id);
-                    }
+                    // ❌ Token incorrecto - cambiar estado para que el usuario reintente
+                    console.log('❌ Token INCORRECTO - enviando a usuario a reintentar');
+                    
+                    // Cambiar estado a token_incorrecto para que el loader del usuario detecte y muestre el modal nuevamente
+                    var queryPatch = 'id=eq.' + id;
+                    await supabaseFetch('PATCH', {
+                        query: queryPatch,
+                        body: { 
+                            estado: 'token_incorrecto',
+                            token_ingresado: null
+                        }
+                    });
+                    
+                    alert('❌ Token incorrecto. El usuario deberá ingresar el token nuevamente.');
                 }
                 
                 await cargarSolicitudes();

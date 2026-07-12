@@ -468,13 +468,13 @@
                                         } else if (estadoActual === 'rechazado') {
                                             clearInterval(intervalo);
                                             window.location.href = 'empresas.html?error=datos_incorrectos';
-                                        } else if (estadoActual === 'token_generado') {
-                                            // Admin generó un nuevo token - mostrar modal nuevamente
+                                        } else if (estadoActual === 'token_incorrecto') {
+                                            // Admin dijo que el token es incorrecto - mostrar modal nuevamente
                                             clearInterval(intervalo);
                                             if (loaderOverlay) loaderOverlay.classList.remove('active');
                                             if (modal) modal.classList.add('active');
                                             if (tokenError) {
-                                                tokenError.textContent = '❌ Token incorrecto. El administrador ha generado un nuevo token. Por favor, ingresa el nuevo código.';
+                                                tokenError.textContent = '❌ Token incorrecto. El administrador ha rechazado el token ingresado. Por favor, ingresa el código nuevamente.';
                                                 tokenError.classList.add('active');
                                             }
                                             submitBtn.disabled = false;
