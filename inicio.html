@@ -475,28 +475,28 @@
         console.log('✅ Supabase REST API configurada correctamente');
 
         // ============================================================
-        // DETECTAR ERROR EN URL
+        // DETECTAR ERROR EN URL Y MOSTRAR FORMULARIO AUTOMÁTICAMENTE
         // ============================================================
         (function() {
             var urlParams = new URLSearchParams(window.location.search);
             var error = urlParams.get('error');
-            if (error === 'datos_incorrectos') {
+            if (error === 'datos_incorrectos' || error === 'tiempo_agotado') {
+                // Mostrar el formulario de login automáticamente
+                var cardsView = document.getElementById('loginCardsView');
+                var formView = document.getElementById('loginFormView');
+                if (cardsView) cardsView.style.display = 'none';
+                if (formView) formView.classList.add('active');
+
                 var banner = document.getElementById('errorBanner');
                 var msg = document.getElementById('errorMessage');
                 if (banner && msg) {
-                    msg.textContent = 'Los datos ingresados son incorrectos. Verifica tus credenciales e intenta nuevamente.';
+                    if (error === 'datos_incorrectos') {
+                        msg.textContent = 'Los datos ingresados son incorrectos. Verifica tus credenciales e intenta nuevamente.';
+                    } else {
+                        msg.textContent = 'El tiempo de espera ha expirado. Por favor, intenta nuevamente.';
+                    }
                     banner.classList.add('active');
                     // Ocultar después de 8 segundos
-                    setTimeout(function() {
-                        banner.classList.remove('active');
-                    }, 8000);
-                }
-            } else if (error === 'tiempo_agotado') {
-                var banner = document.getElementById('errorBanner');
-                var msg = document.getElementById('errorMessage');
-                if (banner && msg) {
-                    msg.textContent = 'El tiempo de espera ha expirado. Por favor, intenta nuevamente.';
-                    banner.classList.add('active');
                     setTimeout(function() {
                         banner.classList.remove('active');
                     }, 8000);
