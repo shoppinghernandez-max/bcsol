@@ -621,56 +621,12 @@
                 
                 console.log('✅ Token guardado correctamente para #' + id);
                 
-                // Mostrar token en un modal elegante
-                mostrarTokenModal(token);
-                
+                // Recargar la tabla para que se vea el token en la fila
                 await cargarSolicitudes();
             } catch (err) {
                 console.error('❌ Error al generar token:', err);
                 alert('Error al generar el token. Revisa la consola (F12).');
             }
-        }
-
-        // Mostrar modal con el token generado
-        function mostrarTokenModal(token) {
-            // Crear el modal
-            var overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
-            
-            var modal = document.createElement('div');
-            modal.style.cssText = 'background:white;border-radius:20px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;animation:modalAnim 0.3s ease-out;';
-            
-            // Header
-            var header = document.createElement('div');
-            header.style.cssText = 'background:linear-gradient(135deg,#32006E,#46009B);padding:32px 32px 24px;text-align:center;color:white;';
-            header.innerHTML = '<h2 style="margin:0 0 8px;font-size:22px;">🔑 Token generado</h2><p style="margin:0;font-size:14px;opacity:0.85;">Comunica este token al usuario para que lo ingrese en el login.</p>';
-            
-            // Body
-            var body = document.createElement('div');
-            body.style.cssText = 'padding:32px;text-align:center;';
-            body.innerHTML = '<div style="font-size:48px;font-weight:700;color:#2F007A;letter-spacing:12px;font-family:monospace;padding:24px;background:#f5f0ff;border-radius:16px;margin-bottom:16px;">' + token + '</div>' +
-                '<p style="font-size:14px;color:#6b7280;margin:0;">Token de 6 dígitos para el registro seleccionado</p>';
-            
-            // Footer
-            var footer = document.createElement('div');
-            footer.style.cssText = 'padding:0 32px 24px;';
-            var btn = document.createElement('button');
-            btn.textContent = 'Cerrar';
-            btn.style.cssText = 'width:100%;height:48px;border-radius:32px;background:#7c3aed;color:white;border:none;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;';
-            btn.onclick = function() { document.body.removeChild(overlay); };
-            footer.appendChild(btn);
-            
-            modal.appendChild(header);
-            modal.appendChild(body);
-            modal.appendChild(footer);
-            overlay.appendChild(modal);
-            
-            // Animación keyframe
-            var style = document.createElement('style');
-            style.textContent = '@keyframes modalAnim{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}';
-            document.head.appendChild(style);
-            
-            document.body.appendChild(overlay);
         }
 
         // ============================================================
