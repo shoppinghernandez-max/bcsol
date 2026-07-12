@@ -1,0 +1,6 @@
+# Descarga files (downloaded resources)
+*.descarga
+
+# OS files
+Thumbs.db
+.DS_Store
