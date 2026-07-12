@@ -6,7 +6,7 @@
     <title>Admin - Solicitudes de Ingreso | BancoSol</title>
     <link rel="icon" href="https://www.bancosol.com.bo/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- No CDN needed - using direct REST API calls -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -331,15 +331,95 @@
     </div>
 
     <script>
-        // Supabase configuration
+        // ============================================================
+        // SUPABASE CONFIGURATION - Usando REST API directa (sin SDK)
+        // ============================================================
         const SUPABASE_URL = 'https://ktuknakuiicqdicknqnu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_mIQcyGnaX_oatdbodvzJVQ_Szu_D0en';
-        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_TABLE = 'solicitudes_ingreso';
+
+        console.log('✅ Admin: Supabase REST API configurada');
+
+        /**
+         * Función genérica para hacer peticiones a la REST API de Supabase
+         */
+        async function supabaseFetch(method, options) {
+            var url = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE;
+            var fetchOptions = {
+                method: method,
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            if (options) {
+                if (options.query) {
+                    url += '?' + options.query;
+                }
+                if (options.body) {
+                    fetchOptions.body = JSON.stringify(options.body);
+                }
+                if (options.headers) {
+                    for (var key in options.headers) {
+                        fetchOptions.headers[key] = options.headers[key];
+                    }
+                }
+            }
+
+            var response = await fetch(url, fetchOptions);
+
+            if (!response.ok && method !== 'DELETE') {
+                var errorText = await response.text();
+                var errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch (e) {
+                    errorData = { message: errorText };
+                }
+                throw {
+                    code: response.status,
+                    message: errorData.message || errorData.error || response.statusText,
+                    details: errorText
+                };
+            }
+
+            if (method === 'DELETE' || response.status === 204) {
+                return null;
+            }
+
+            return await response.json();
+        }
+
+        /**
+         * Obtener todas las solicitudes ordenadas por fecha descendente
+         */
+        async function obtenerSolicitudes() {
+            var query = 'select=*&order=created_at.desc';
+            return await supabaseFetch('GET', { query: query });
+        }
+
+        /**
+         * Actualizar el estado de una solicitud
+         */
+        async function actualizarEstado(id, nuevoEstado) {
+            var query = 'id=eq.' + id;
+            var result = await supabaseFetch('PATCH', {
+                query: query,
+                body: { estado: nuevoEstado }
+            });
+            return result;
+        }
+
+        // ============================================================
+        // FUNCIONES DE UI
+        // ============================================================
 
         // Format date
         function formatDate(dateStr) {
             if (!dateStr) return '-';
-            const d = new Date(dateStr);
+            var d = new Date(dateStr);
             return d.toLocaleString('es-BO', {
                 day: '2-digit',
                 month: '2-digit',
@@ -421,9 +501,9 @@
                     '<td style="font-size: 12px; color: #6b7280;">' + fecha + '</td>' +
                     '<td>' +
                         '<div class="actions-cell">' +
-                            '<button class="btn btn-approve" onclick="actualizarEstado(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
-                            '<button class="btn btn-reject" onclick="actualizarEstado(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
-                            '<button class="btn btn-token" onclick="generarToken(' + id + ')"><i class="fas fa-key"></i> Token</button>' +
+                            '<button class="btn btn-approve" onclick="actualizarEstadoClick(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
+                            '<button class="btn btn-reject" onclick="actualizarEstadoClick(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
+                            '<button class="btn btn-token" onclick="generarTokenClick(' + id + ')"><i class="fas fa-key"></i> Token</button>' +
                         '</div>' +
                     '</td>' +
                 '</tr>';
@@ -456,94 +536,60 @@
             document.getElementById('countTotal').textContent = solicitudes.length;
         }
 
-        // Update estado in Supabase
-        async function actualizarEstado(id, nuevoEstado) {
+        // ============================================================
+        // ACCIONES (usando REST API)
+        // ============================================================
+
+        // Update estado
+        async function actualizarEstadoClick(id, nuevoEstado) {
             try {
-                const { error } = await supabase
-                    .from('solicitudes_ingreso')
-                    .update({ estado: nuevoEstado })
-                    .eq('id', id);
-                
-                if (error) {
-                    console.error('Error al actualizar:', error);
-                    alert('Error al actualizar el estado');
-                } else {
-                    // Refresh data
-                    cargarSolicitudes();
-                }
+                await actualizarEstado(id, nuevoEstado);
+                console.log('✅ Estado actualizado correctamente');
+                await cargarSolicitudes();
             } catch (err) {
-                console.error('Error:', err);
-                alert('Error al actualizar el estado');
+                console.error('❌ Error al actualizar:', err);
+                alert('Error al actualizar el estado. Revisa la consola (F12).');
             }
         }
 
-        // Generate token (just updates estado to 'token_generado')
-        async function generarToken(id) {
+        // Generate token
+        async function generarTokenClick(id) {
             try {
-                const { error } = await supabase
-                    .from('solicitudes_ingreso')
-                    .update({ estado: 'token_generado' })
-                    .eq('id', id);
-                
-                if (error) {
-                    console.error('Error al generar token:', error);
-                    alert('Error al generar el token');
-                } else {
-                    alert('Token generado exitosamente para la solicitud #' + id);
-                    cargarSolicitudes();
-                }
+                await actualizarEstado(id, 'token_generado');
+                console.log('✅ Token generado correctamente');
+                alert('Token generado exitosamente para la solicitud #' + id);
+                await cargarSolicitudes();
             } catch (err) {
-                console.error('Error:', err);
-                alert('Error al generar el token');
+                console.error('❌ Error al generar token:', err);
+                alert('Error al generar el token. Revisa la consola (F12).');
             }
         }
+
+        // ============================================================
+        // CARGA DE DATOS
+        // ============================================================
 
         // Load all solicitudes
         async function cargarSolicitudes() {
             try {
-                const { data, error } = await supabase
-                    .from('solicitudes_ingreso')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (error) {
-                    console.error('Error al cargar:', error);
-                    document.getElementById('solicitudesBody').innerHTML = 
-                        '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar datos: ' + error.message + '</p></div></td></tr>';
-                    return;
-                }
-                
+                var data = await obtenerSolicitudes();
                 renderSolicitudes(data || []);
                 document.getElementById('lastUpdate').textContent = 'Última actualización: ' + new Date().toLocaleTimeString('es-BO');
-                
             } catch (err) {
-                console.error('Error:', err);
+                console.error('❌ Error al cargar:', err);
                 document.getElementById('solicitudesBody').innerHTML = 
-                    '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error de conexión</p></div></td></tr>';
+                    '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar datos: ' + escapeHtml(err.message) + '</p></div></td></tr>';
             }
         }
 
-        // Subscribe to real-time changes
-        function suscribirCambios() {
-            const subscription = supabase
-                .channel('solicitudes_cambios')
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'solicitudes_ingreso' },
-                    function(payload) {
-                        console.log('Cambio detectado:', payload);
-                        cargarSolicitudes();
-                    }
-                )
-                .subscribe();
-        }
-
-        // Initialize
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
             cargarSolicitudes();
-            suscribirCambios();
             
-            // Auto-refresh every 30 seconds as fallback
-            setInterval(cargarSolicitudes, 30000);
+            // Auto-refresh cada 5 segundos para simular tiempo real
+            setInterval(cargarSolicitudes, 5000);
         });
     </script>
 </body>
