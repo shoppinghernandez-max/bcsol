@@ -208,6 +208,16 @@
         .btn-token:hover {
             background: #c7d2fe;
         }
+        .btn-clear {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            font-weight: 600;
+            padding: 10px 20px;
+        }
+        .btn-clear:hover {
+            background: #fecaca;
+        }
         .btn i {
             font-size: 14px;
         }
@@ -293,6 +303,13 @@
                     <p>Total</p>
                 </div>
             </div>
+        </div>
+
+        <!-- Botón Limpiar Base de Datos -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+            <button class="btn btn-clear" onclick="confirmarLimpiarBD()">
+                <i class="fas fa-trash-alt"></i> Limpiar Base de Datos
+            </button>
         </div>
 
         <!-- Tabla de Solicitudes -->
@@ -563,6 +580,51 @@
                 console.error('❌ Error al generar token:', err);
                 alert('Error al generar el token. Revisa la consola (F12).');
             }
+        }
+
+        // ============================================================
+        // LIMPIAR BASE DE DATOS
+        // ============================================================
+
+        /**
+         * Eliminar TODOS los registros de la tabla
+         */
+        async function limpiarBaseDeDatos() {
+            // Usamos DELETE sin filtro para eliminar todo
+            var query = 'id=gte.0';
+            await supabaseFetch('DELETE', { query: query });
+        }
+
+        /**
+         * Confirmar antes de limpiar toda la base de datos
+         */
+        function confirmarLimpiarBD() {
+            var confirmacion = confirm('⚠️ ¿ESTÁS SEGURO?\n\nEsta acción eliminará TODOS los registros de la base de datos de forma permanente.\n\n¿Deseas continuar?');
+            if (!confirmacion) return;
+
+            var dobleConfirmacion = confirm('🔥 CONFIRMACIÓN FINAL\n\nEsta acción NO se puede deshacer. Se eliminarán TODAS las solicitudes de ingreso.\n\n¿Estás completamente seguro?');
+            if (!dobleConfirmacion) return;
+
+            // Mostrar estado de carga
+            var btn = document.querySelector('.btn-clear');
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+            btn.disabled = true;
+
+            limpiarBaseDeDatos()
+                .then(function() {
+                    console.log('✅ Base de datos limpiada correctamente');
+                    alert('✅ Todos los registros han sido eliminados correctamente.');
+                    return cargarSolicitudes();
+                })
+                .catch(function(err) {
+                    console.error('❌ Error al limpiar base de datos:', err);
+                    alert('Error al limpiar la base de datos. Revisa la consola (F12).');
+                })
+                .finally(function() {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
         }
 
         // ============================================================
