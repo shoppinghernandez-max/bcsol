@@ -252,11 +252,57 @@
             color: #9ca3af;
             margin-left: auto;
         }
-        @media (max-width: 768px) {
-            .header { padding: 12px 20px; flex-direction: column; gap: 8px; }
-            .stats-bar { flex-direction: column; }
-            .table-container { overflow-x: auto; }
-            .actions-cell { flex-direction: column; }
+        @media (max-width: 1024px) {
+            .header { padding: 12px 20px; flex-direction: column; gap: 8px; text-align: center; }
+            .header-left { flex-direction: column; gap: 8px; }
+            .header-left h1 { font-size: 16px; }
+            .container { padding: 16px 12px; }
+            .stats-bar { flex-direction: column; gap: 12px; }
+            .stat-card { padding: 14px 18px; }
+            .stat-info h3 { font-size: 22px; }
+            
+            /* Tabla responsive con scroll horizontal */
+            .table-container { 
+                overflow-x: auto; 
+                -webkit-overflow-scrolling: touch;
+                border-radius: 8px;
+            }
+            table { min-width: 900px; }
+            thead th { 
+                padding: 10px 12px; 
+                font-size: 11px; 
+                white-space: nowrap;
+            }
+            tbody td { 
+                padding: 10px 12px; 
+                font-size: 13px; 
+            }
+            .actions-cell { 
+                flex-direction: column; 
+                gap: 4px;
+            }
+            .btn { 
+                padding: 6px 10px; 
+                font-size: 11px; 
+                justify-content: center;
+            }
+            .btn i { font-size: 12px; }
+            .user-avatar { width: 28px; height: 28px; font-size: 11px; }
+            .password-cell { font-size: 11px; }
+        }
+
+        @media (max-width: 480px) {
+            .header { padding: 10px 12px; }
+            .header-left img { height: 30px; }
+            .header-badge { font-size: 11px; padding: 4px 10px; }
+            .container { padding: 10px 8px; }
+            .stat-card { padding: 10px 14px; gap: 10px; }
+            .stat-icon { width: 36px; height: 36px; font-size: 16px; }
+            .stat-info h3 { font-size: 18px; }
+            .stat-info p { font-size: 12px; }
+            .section-title { font-size: 15px; }
+            .btn-clear { padding: 8px 14px; font-size: 12px; }
+            .footer { font-size: 11px; padding: 16px; }
         }
     </style>
 </head>
