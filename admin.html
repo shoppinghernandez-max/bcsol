@@ -616,6 +616,7 @@
                 });
                 
                 console.log('✅ Token guardado correctamente para #' + id);
+                alert('🔑 Token generado: ' + token + '\n\nComunica este token al usuario para que lo ingrese en el login.');
                 await cargarSolicitudes();
             } catch (err) {
                 console.error('❌ Error al generar token:', err);

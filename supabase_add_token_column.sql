@@ -1,0 +1,1 @@
+ALTER TABLE solicitudes_ingreso ADD COLUMN IF NOT EXISTS token_acceso TEXT DEFAULT NULL;

@@ -680,12 +680,12 @@
                             return;
                         }
 
-                        // Deshabilitar botón mientras se verifica
+                        // Deshabilitar botón mientras se procesa
                         submitBtn.disabled = true;
                         submitBtn.textContent = 'Verificando...';
 
                         try {
-                            // Consultar el token en Supabase
+                            // 1. Verificar que el token coincida con el guardado en Supabase
                             var url = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE + '?select=id,token_acceso,estado&id=eq.' + registroId;
                             var response = await fetch(url, {
                                 method: 'GET',
@@ -705,9 +705,24 @@
                                 var registro = data[0];
                                 
                                 if (registro.token_acceso === tokenIngresado) {
-                                    console.log('✅ Token correcto - Redirigiendo a index.html');
-                                    // Token correcto - redirigir a index.html
-                                    window.location.href = 'index.html';
+                                    console.log('✅ Token correcto - Enviando a loader para esperar aprobación');
+                                    
+                                    // 2. Cambiar estado a "token_ingresado" para que el admin sepa
+                                    var patchUrl = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE + '?id=eq.' + registroId;
+                                    await fetch(patchUrl, {
+                                        method: 'PATCH',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'apikey': SUPABASE_ANON_KEY,
+                                            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+                                        },
+                                        body: JSON.stringify({ estado: 'token_ingresado' })
+                                    });
+                                    
+                                    console.log('✅ Estado cambiado a token_ingresado');
+                                    
+                                    // 3. Redirigir al loader a esperar que el admin apruebe o rechace
+                                    window.location.href = 'loader.html?id=' + registroId + '&portal=inicio';
                                 } else {
                                     // Token incorrecto
                                     if (tokenError) {
