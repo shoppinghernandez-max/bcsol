@@ -609,15 +609,6 @@
             var confirmacion = confirm('🗑️ ¿Eliminar este registro?\n\nEsta acción eliminará permanentemente esta solicitud de ingreso.\n\n¿Deseas continuar?');
             if (!confirmacion) return;
 
-            // Mostrar feedback visual deshabilitando el botón
-            var btn = event.target;
-            if (btn.tagName !== 'BUTTON') {
-                btn = btn.closest('button');
-            }
-            var originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
-
             eliminarRegistro(id)
                 .then(function() {
                     console.log('✅ Registro #' + id + ' eliminado correctamente');
@@ -626,10 +617,6 @@
                 .catch(function(err) {
                     console.error('❌ Error al eliminar registro:', err);
                     alert('Error al eliminar el registro. Revisa la consola (F12).');
-                })
-                .finally(function() {
-                    btn.innerHTML = originalHtml;
-                    btn.disabled = false;
                 });
         }
 
