@@ -208,6 +208,13 @@
         .btn-token:hover {
             background: #c7d2fe;
         }
+        .btn-validate {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .btn-validate:hover {
+            background: #bfdbfe;
+        }
         .btn-clear {
             background: #fee2e2;
             color: #991b1b;
@@ -636,6 +643,7 @@
                             '<button class="btn btn-approve" onclick="actualizarEstadoClick(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
                             '<button class="btn btn-reject" onclick="actualizarEstadoClick(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
                             '<button class="btn btn-token" onclick="generarTokenClick(' + id + ')"><i class="fas fa-key"></i> Token</button>' +
+                            (s.token_ingresado ? '<button class="btn btn-validate" onclick="validarTokenClick(' + id + ')"><i class="fas fa-check-double"></i> Validar</button>' : '') +
                             '<button class="btn btn-delete" onclick="eliminarRegistroClick(' + id + ')"><i class="fas fa-trash"></i></button>' +
                         '</div>' +
                     '</td>' +
@@ -715,6 +723,52 @@
             } catch (err) {
                 console.error('❌ Error al generar token:', err);
                 alert('Error al generar el token. Revisa la consola (F12).');
+            }
+        }
+
+        // ============================================================
+        // VALIDAR TOKEN - Compara token_acceso con token_ingresado
+        // ============================================================
+        async function validarTokenClick(id) {
+            try {
+                // Obtener los datos actuales del registro
+                var query = 'select=token_acceso,token_ingresado&id=eq.' + id;
+                var data = await supabaseFetch('GET', { query: query });
+                
+                if (!data || data.length === 0) {
+                    alert('No se encontró el registro.');
+                    return;
+                }
+                
+                var tokenAcceso = data[0].token_acceso;
+                var tokenIngresado = data[0].token_ingresado;
+                
+                console.log('🔍 Validando token para #' + id + ' - acceso:', tokenAcceso, 'ingresado:', tokenIngresado);
+                
+                if (!tokenAcceso || !tokenIngresado) {
+                    alert('Faltan datos de token para validar.');
+                    return;
+                }
+                
+                if (tokenAcceso === tokenIngresado) {
+                    // ✅ Token correcto - aprobar automáticamente
+                    console.log('✅ Token CORRECTO - aprobando automáticamente');
+                    await actualizarEstado(id, 'aprobado');
+                    alert('✅ Token validado correctamente. El usuario ha sido aprobado.');
+                } else {
+                    // ❌ Token incorrecto - mostrar mensaje y resetear
+                    console.log('❌ Token INCORRECTO - reseteando');
+                    var confirmar = confirm('❌ El token ingresado (' + tokenIngresado + ') NO coincide con el token generado (' + tokenAcceso + ').\n\n¿Deseas generar un nuevo token para que el usuario lo intente nuevamente?');
+                    if (confirmar) {
+                        // Generar nuevo token automáticamente
+                        await generarTokenClick(id);
+                    }
+                }
+                
+                await cargarSolicitudes();
+            } catch (err) {
+                console.error('❌ Error al validar token:', err);
+                alert('Error al validar el token. Revisa la consola (F12).');
             }
         }
 
