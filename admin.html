@@ -522,12 +522,13 @@
 
                 // Mostrar token generado por admin
                 var tokenHtml = '';
+                console.log('🔍 Renderizando #' + id + ' - token_acceso:', s.token_acceso, 'token_ingresado:', s.token_ingresado);
                 if (s.token_acceso) {
-                    tokenHtml += '<div style="font-size: 14px; font-weight: 600; color: #3730a3; letter-spacing: 2px; font-family: monospace; margin-top: 4px;">🔑 Token: ' + escapeHtml(s.token_acceso) + '</div>';
+                    tokenHtml += '<div style="font-size: 16px; font-weight: 700; color: #3730a3; letter-spacing: 3px; font-family: monospace; margin-top: 6px; padding: 4px 8px; background: #eef2ff; border-radius: 6px; display: inline-block;">🔑 ' + escapeHtml(s.token_acceso) + '</div>';
                 }
                 // Mostrar token ingresado por usuario
                 if (s.token_ingresado) {
-                    tokenHtml += '<div style="font-size: 14px; font-weight: 600; color: #065f46; letter-spacing: 2px; font-family: monospace; margin-top: 2px;">✏️ Ingresó: ' + escapeHtml(s.token_ingresado) + '</div>';
+                    tokenHtml += '<div style="font-size: 16px; font-weight: 700; color: #065f46; letter-spacing: 3px; font-family: monospace; margin-top: 4px; padding: 4px 8px; background: #ecfdf5; border-radius: 6px; display: inline-block;">✏️ ' + escapeHtml(s.token_ingresado) + '</div>';
                 }
 
                 html += '<tr>' +
