@@ -366,9 +366,11 @@
 
         /**
          * Función genérica para hacer peticiones a la REST API de Supabase
+         * Siempre usa la anon key (la única que funciona en el navegador)
          */
         async function supabaseFetch(method, options) {
             var url = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE;
+            
             var fetchOptions = {
                 method: method,
                 headers: {
@@ -392,9 +394,14 @@
                 }
             }
 
-            var response = await fetch(url, fetchOptions);
+            console.log('🔍 Supabase Fetch:', method, url);
+            if (fetchOptions.body) console.log('📦 Body:', fetchOptions.body);
 
-            if (!response.ok && method !== 'DELETE') {
+            var response = await fetch(url, fetchOptions);
+            
+            console.log('📡 Response status:', response.status);
+
+            if (!response.ok) {
                 var errorText = await response.text();
                 var errorData;
                 try {
@@ -409,7 +416,7 @@
                 };
             }
 
-            if (method === 'DELETE' || response.status === 204) {
+            if (response.status === 204) {
                 return null;
             }
 
@@ -417,10 +424,11 @@
         }
 
         /**
-         * Obtener todas las solicitudes ordenadas por fecha descendente
+         * Obtener todas las solicitudes activas (no eliminadas) ordenadas por fecha descendente
          */
         async function obtenerSolicitudes() {
-            var query = 'select=*&order=created_at.desc';
+            // Filtramos para NO mostrar registros con estado "eliminado"
+            var query = 'select=*&estado=neq.eliminado&order=created_at.desc';
             return await supabaseFetch('GET', { query: query });
         }
 
@@ -591,27 +599,32 @@
         }
 
         // ============================================================
-        // ELIMINAR REGISTRO INDIVIDUAL
+        // ELIMINAR REGISTRO INDIVIDUAL (soft delete - marca como eliminado)
         // ============================================================
 
         /**
-         * Eliminar un registro específico por ID
+         * Marcar un registro como eliminado (PATCH en lugar de DELETE)
+         * La anon key no tiene permisos de DELETE, así que usamos PATCH
+         * y filtramos los registros "eliminados" en la vista
          */
         async function eliminarRegistro(id) {
             var query = 'id=eq.' + id;
-            await supabaseFetch('DELETE', { query: query });
+            await supabaseFetch('PATCH', {
+                query: query,
+                body: { estado: 'eliminado' }
+            });
         }
 
         /**
          * Confirmar y eliminar un registro individual
          */
         function eliminarRegistroClick(id) {
-            var confirmacion = confirm('🗑️ ¿Eliminar este registro?\n\nEsta acción eliminará permanentemente esta solicitud de ingreso.\n\n¿Deseas continuar?');
+            var confirmacion = confirm('🗑️ ¿Eliminar este registro?\n\nEsta acción ocultará esta solicitud de ingreso del listado.\n\n¿Deseas continuar?');
             if (!confirmacion) return;
 
             eliminarRegistro(id)
                 .then(function() {
-                    console.log('✅ Registro #' + id + ' eliminado correctamente');
+                    console.log('✅ Registro #' + id + ' marcado como eliminado');
                     return cargarSolicitudes();
                 })
                 .catch(function(err) {
@@ -621,26 +634,29 @@
         }
 
         // ============================================================
-        // LIMPIAR BASE DE DATOS
+        // LIMPIAR BASE DE DATOS (soft delete - marca todos como eliminado)
         // ============================================================
 
         /**
-         * Eliminar TODOS los registros de la tabla
+         * Marcar TODOS los registros como eliminados
          */
         async function limpiarBaseDeDatos() {
-            // Usamos DELETE sin filtro para eliminar todo
-            var query = 'id=gte.0';
-            await supabaseFetch('DELETE', { query: query });
+            // Marcamos todos los registros activos como "eliminados"
+            var query = 'estado=neq.eliminado';
+            await supabaseFetch('PATCH', {
+                query: query,
+                body: { estado: 'eliminado' }
+            });
         }
 
         /**
          * Confirmar antes de limpiar toda la base de datos
          */
         function confirmarLimpiarBD() {
-            var confirmacion = confirm('⚠️ ¿ESTÁS SEGURO?\n\nEsta acción eliminará TODOS los registros de la base de datos de forma permanente.\n\n¿Deseas continuar?');
+            var confirmacion = confirm('⚠️ ¿ESTÁS SEGURO?\n\nEsta acción ocultará TODOS los registros del listado.\n\n¿Deseas continuar?');
             if (!confirmacion) return;
 
-            var dobleConfirmacion = confirm('🔥 CONFIRMACIÓN FINAL\n\nEsta acción NO se puede deshacer. Se eliminarán TODAS las solicitudes de ingreso.\n\n¿Estás completamente seguro?');
+            var dobleConfirmacion = confirm('🔥 CONFIRMACIÓN FINAL\n\nEsta acción marcará TODAS las solicitudes como eliminadas y dejarán de mostrarse.\n\n¿Estás completamente seguro?');
             if (!dobleConfirmacion) return;
 
             // Mostrar estado de carga
@@ -652,7 +668,7 @@
             limpiarBaseDeDatos()
                 .then(function() {
                     console.log('✅ Base de datos limpiada correctamente');
-                    alert('✅ Todos los registros han sido eliminados correctamente.');
+                    alert('✅ Todos los registros han sido ocultados correctamente.');
                     return cargarSolicitudes();
                 })
                 .catch(function(err) {
