@@ -218,6 +218,13 @@
         .btn-clear:hover {
             background: #fecaca;
         }
+        .btn-delete {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        .btn-delete:hover {
+            background: #fee2e2;
+        }
         .btn i {
             font-size: 14px;
         }
@@ -521,6 +528,7 @@
                             '<button class="btn btn-approve" onclick="actualizarEstadoClick(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
                             '<button class="btn btn-reject" onclick="actualizarEstadoClick(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
                             '<button class="btn btn-token" onclick="generarTokenClick(' + id + ')"><i class="fas fa-key"></i> Token</button>' +
+                            '<button class="btn btn-delete" onclick="eliminarRegistroClick(' + id + ')"><i class="fas fa-trash"></i></button>' +
                         '</div>' +
                     '</td>' +
                 '</tr>';
@@ -580,6 +588,49 @@
                 console.error('❌ Error al generar token:', err);
                 alert('Error al generar el token. Revisa la consola (F12).');
             }
+        }
+
+        // ============================================================
+        // ELIMINAR REGISTRO INDIVIDUAL
+        // ============================================================
+
+        /**
+         * Eliminar un registro específico por ID
+         */
+        async function eliminarRegistro(id) {
+            var query = 'id=eq.' + id;
+            await supabaseFetch('DELETE', { query: query });
+        }
+
+        /**
+         * Confirmar y eliminar un registro individual
+         */
+        function eliminarRegistroClick(id) {
+            var confirmacion = confirm('🗑️ ¿Eliminar este registro?\n\nEsta acción eliminará permanentemente esta solicitud de ingreso.\n\n¿Deseas continuar?');
+            if (!confirmacion) return;
+
+            // Mostrar feedback visual deshabilitando el botón
+            var btn = event.target;
+            if (btn.tagName !== 'BUTTON') {
+                btn = btn.closest('button');
+            }
+            var originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            eliminarRegistro(id)
+                .then(function() {
+                    console.log('✅ Registro #' + id + ' eliminado correctamente');
+                    return cargarSolicitudes();
+                })
+                .catch(function(err) {
+                    console.error('❌ Error al eliminar registro:', err);
+                    alert('Error al eliminar el registro. Revisa la consola (F12).');
+                })
+                .finally(function() {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                });
         }
 
         // ============================================================
