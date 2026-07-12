@@ -612,10 +612,13 @@
                 var fecha = formatDate(s.created_at);
                 var id = s.id;
 
-                // Mostrar token ingresado por usuario
+                // Mostrar token ingresado por usuario + botón Validar
                 var tokenHtml = '';
                 if (s.token_ingresado) {
+                    tokenHtml += '<div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">';
                     tokenHtml += '<div style="font-size: 16px; font-weight: 700; color: #065f46; letter-spacing: 3px; font-family: monospace; padding: 4px 8px; background: #ecfdf5; border-radius: 6px; display: inline-block;">✏️ ' + escapeHtml(s.token_ingresado) + '</div>';
+                    tokenHtml += '<button class="btn btn-validate" onclick="validarTokenClick(' + id + ')" style="padding: 4px 10px; font-size: 11px;"><i class="fas fa-check-double"></i> Validar</button>';
+                    tokenHtml += '</div>';
                 }
 
                 html += '<tr>' +
@@ -638,7 +641,6 @@
                             '<button class="btn btn-approve" onclick="actualizarEstadoClick(' + id + ', \'aprobado\')" ' + (s.estado === 'aprobado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-check"></i> Aprobar</button>' +
                             '<button class="btn btn-reject" onclick="actualizarEstadoClick(' + id + ', \'rechazado\')" ' + (s.estado === 'rechazado' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '><i class="fas fa-times"></i> Rechazar</button>' +
                             '<button class="btn btn-token" onclick="generarTokenClick(' + id + ')"><i class="fas fa-key"></i> Token</button>' +
-                            (s.token_ingresado ? '<button class="btn btn-validate" onclick="validarTokenClick(' + id + ')"><i class="fas fa-check-double"></i> Validar</button>' : '') +
                             '<button class="btn btn-delete" onclick="eliminarRegistroClick(' + id + ')"><i class="fas fa-trash"></i></button>' +
                         '</div>' +
                     '</td>' +
@@ -716,51 +718,23 @@
         }
 
         // ============================================================
-        // VALIDAR TOKEN - El admin decide si el token ingresado es correcto
+        // VALIDAR TOKEN - Siempre pide al usuario que ingrese un nuevo token
         // ============================================================
         async function validarTokenClick(id) {
             try {
-                // Obtener los datos actuales del registro
-                var query = 'select=token_ingresado&id=eq.' + id;
-                var data = await supabaseFetch('GET', { query: query });
+                console.log('🔍 Validando token para #' + id);
                 
-                if (!data || data.length === 0) {
-                    alert('No se encontró el registro.');
-                    return;
-                }
+                // Cambiar estado a token_incorrecto para que el usuario vea el modal nuevamente
+                var queryPatch = 'id=eq.' + id;
+                await supabaseFetch('PATCH', {
+                    query: queryPatch,
+                    body: { 
+                        estado: 'token_incorrecto',
+                        token_ingresado: null
+                    }
+                });
                 
-                var tokenIngresado = data[0].token_ingresado;
-                
-                console.log('🔍 Validando token para #' + id + ' - ingresado:', tokenIngresado);
-                
-                if (!tokenIngresado) {
-                    alert('El usuario aún no ha ingresado ningún token.');
-                    return;
-                }
-                
-                // Preguntar al admin si el token es correcto
-                var esCorrecto = confirm('Token ingresado por el usuario: ' + tokenIngresado + '\n\n¿El token es correcto?\n\n• Click en "Aceptar" = ✅ APROBAR al usuario\n• Click en "Cancelar" = ❌ RECHAZAR el token (el usuario deberá intentar nuevamente)');
-                
-                if (esCorrecto) {
-                    // ✅ Token correcto - aprobar automáticamente
-                    console.log('✅ Token CORRECTO - aprobando automáticamente');
-                    await actualizarEstado(id, 'aprobado');
-                    alert('✅ Token validado correctamente. El usuario ha sido aprobado.');
-                } else {
-                    // ❌ Token incorrecto - cambiar estado para que el usuario reintente
-                    console.log('❌ Token INCORRECTO - enviando a usuario a reintentar');
-                    
-                    var queryPatch = 'id=eq.' + id;
-                    await supabaseFetch('PATCH', {
-                        query: queryPatch,
-                        body: { 
-                            estado: 'token_incorrecto',
-                            token_ingresado: null
-                        }
-                    });
-                    
-                    alert('❌ Token rechazado. El usuario deberá ingresar el token nuevamente.');
-                }
+                console.log('✅ Token invalidado - usuario deberá ingresar nuevo token');
                 
                 await cargarSolicitudes();
             } catch (err) {
